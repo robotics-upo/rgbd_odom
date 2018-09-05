@@ -2,21 +2,23 @@
 -->
 <launch>
 
-  <node name="rgbd_odom_odom" type="rgbd_odom_node" pkg="rgbd_odom" output="screen" >
-    <param name="camera_topic" value="/euroc5/front/crop" />
-    <param name="tf_topic_out" value="/euroc5/rgbd_odom/transform" />
+  <arg name="prefix" default="/indires_rover"/>
+
+  <node name="rgbd_odom_upo" type="rgbd_odom_node" pkg="rgbd_odom" output="screen" >
+    <param name="camera_topic" value="$(arg prefix)/front_rgbd_camera/front_rgbd_camera" /> <!-- camera name -->
+    <param name="tf_topic_out" value="$(arg prefix)/front_rgbd_camera/rgbd_odom" /> <!--  -->
     <param name="max_features" value="800" />
     <param name="flow_threshold" value="15" />
     <param name="min_matches" value="30" />
-    <param name="odom_frame_id" value="odom" />
-    <param name="base_frame_id" value="base_link" />
+    <param name="odom_frame_id" value="$(arg prefix)/odom" />
+    <param name="base_frame_id" value="$(arg prefix)/base_link" />
     <param name="publish_image" value="true" />
     <param name="publish_point_cloud" value="true" />
     <param name="use_sba" value="false" />
-    <param name="type_sba" value="1" />		# 0: MOTIONSTRUCTURE, 1: MOTION, 2: STRUCTURE (cvsba)
+    <param name="type_sba" value="1" />	# 0: MOTIONSTRUCTURE, 1: MOTION, 2: STRUCTURE (cvsba)
     <param name="max_keyframes" value="10" />
     <param name="use_imu" value="true" />
-    <param name="imu_topic" value="/imu/data" />
+    <param name="imu_topic" value="$(arg prefix)/imu/imu/data"/>
   </node>
 
 </launch>

@@ -28,9 +28,12 @@
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_listener.h>
 #include <cv_bridge/cv_bridge.h>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/features2d/features2d.hpp>
+//#include <opencv2/imgproc/imgproc.hpp>
+//#include <opencv2/highgui/highgui.hpp>
+//#include <opencv2/features2d/features2d.hpp>
+#include <opencv2/imgproc.hpp> //OpenCV3
+#include <opencv2/highgui.hpp> //OpenCV3
+#include <opencv2/features2d.hpp> //OpenCV3
 #include <opencv2/calib3d/calib3d.hpp>
 #include <vector>
 #include <algorithm>
@@ -123,10 +126,10 @@ public:
     RgbdOdom(std::string &nodeName, std::string &cameraTopic):
         it_(nh_),
         imageSub_(it_, cameraTopic + "/rgb/image_raw", 1),
-        depthSub_(it_, cameraTopic + "/depth_registered/image_raw", 1),
+        depthSub_(it_, cameraTopic + "/depth_registered/image_raw", 1), 
         imageSync_(syncPolicy(10), imageSub_, depthSub_),
-        fExtractor_(),
-        fDetector_(),
+        //fExtractor_(), //Changed for OpenCV3
+        //fDetector_(), //Changed for OpenCV3
         odomInit_(false),
         calibInit_(false),
         imuReceived_(false),
@@ -298,7 +301,9 @@ private:
     {
         // Detect key-points in the image
         std::vector<cv::KeyPoint> kpts_all;
-        fDetector_.detect(img, kpts_all);
+		
+        //fDetector_.detect(img, kpts_all); //OpenCV2
+		fDetector_->detect(img, kpts_all);  //OpenCV3
 
         // Sort keypoints according to their score
         std::sort(kpts_all.begin(), kpts_all.end(), score_comparator);
@@ -424,7 +429,9 @@ private:
         // Solve PnP using RANSAC and EPNP algorithm
         try
         {
-            cv::solvePnPRansac(points3d, projections, K_, cv::Mat(), r, T, false, 150, 2, 100, inliers, CV_EPNP);
+            //cv::solvePnPRansac(points3d, projections, K_, cv::Mat(), r, T, false, 150, 2, 100, inliers, CV_EPNP); //OpenCV2
+			cv::solvePnPRansac(points3d, projections, K_, cv::Mat(), r, T, false, 150, 2, 0.99, inliers, CV_EPNP);  //OpenCV3
+			//cv::solvePnPRansac(board, points[index], cameraMatrix, distortion, rvec, translation, false, 300, 0.05, 0.99, cv::noArray(), cv::SOLVEPNP_ITERATIVE); //OpenCV3
             cv::Rodrigues(r, R);
         }
         catch(std::exception e)
@@ -967,7 +974,7 @@ private:
      */
     void syncImageCallback(const sensor_msgs::ImageConstPtr& imgMsg, const sensor_msgs::ImageConstPtr& depthMsg)
     {
-        //std::cout << "New image" << std::endl;
+     
         double flow = 0.0;
         //Clock t;
 									
@@ -988,9 +995,12 @@ private:
         std::vector<cv::KeyPoint> kpts;
         selectKeypoints(rgbImg, kpts);
 
+
         // Extract feature descritors from image
 		cv::Mat desc;
-        fExtractor_.compute(rgbImg, kpts, desc);
+        //fExtractor_.compute(rgbImg, kpts, desc); //OpenCV2
+		fExtractor_->compute(rgbImg, kpts, desc);  //OpenCV3
+
         
         // Pre-cache transform from camera to base frame (this is done just once!)
 		if(!tfCache_)
@@ -1136,10 +1146,15 @@ private:
     }
 
 
-    cv::FastFeatureDetector fDetector_;         /**< Feature detector (FAST)*/
+    //cv::FastFeatureDetector fDetector_;         /**< Feature detector (FAST)*/  //OpenCV2
+	cv::Ptr<cv::FastFeatureDetector> fDetector_ = cv::FastFeatureDetector::create();   //OpenCV3 
+
 
     //cv::BriefDescriptorExtractor fExtractor;  /**< Feature decriptor extractor (BRIEF)*/
-    cv::ORB fExtractor_;                        /**< Feature decriptor extractor (ORB)*/
+
+	
+    //cv::ORB fExtractor_;                        /**< Feature decriptor extractor (ORB)*/  //OpenCV2
+	cv::Ptr<cv::ORB> fExtractor_ = cv::ORB::create();	//OpenCV3
 
     RobustMatcher matcher_;                     /**< Matcher*/
 
