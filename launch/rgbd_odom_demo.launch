@@ -7,6 +7,8 @@
   
   # Bag starting second
   <arg name="start"/>
+
+  <arg name="camera" default="/front"/>
   
   # Use simulation time fro TFs
   <param name="use_sim_time" value="true" />
@@ -15,12 +17,12 @@
   <node name="bag_player" type="play" pkg="rosbag" args="$(arg bag_file) --clock -s $(arg start)" />
     
   # Uncompress images and depth
-  <node name="republish_img" type="republish" pkg="image_transport" output="screen" args="compressed in:=/front/rgb/image_raw raw out:=/front/rgb/image_raw"/>
-  <node name="republish_depth" type="republish" pkg="image_transport" output="screen" args="compressedDepth in:=/front/depth_registered/image_raw raw out:=/front/depth_registered/image_raw"/>
+  <node name="republish_img" type="republish" pkg="image_transport" output="screen" args="compressed in:=$(arg camera)/rgb/image_raw raw out:=$(arg camera)/rgb/image_raw"/>
+  <node name="republish_depth" type="republish" pkg="image_transport" output="screen" args="compressedDepth in:=$(arg camera)/depth_registered/image_raw raw out:=$(arg camera)/depth_registered/image_raw"/>
 
   # Launch RGB-D odom
   <node name="rgbd_odom_odom" type="rgbd_odom_node" pkg="rgbd_odom" output="screen" >
-    <param name="camera_topic" value="/front" />
+    <param name="camera_topic" value="$(arg camera)" />
     <param name="tf_topic_out" value="/rgbd_odom/transform" />
     <param name="max_features" value="800" />
     <param name="flow_threshold" value="15" />
@@ -32,12 +34,16 @@
     <param name="use_sba" value="false" />
     <param name="type_sba" value="1" />		# 0: MOTIONSTRUCTURE, 1: MOTION, 2: STRUCTURE (cvsba)
     <param name="max_keyframes" value="10" />
-    <param name="use_imu" value="true" />
+    <param name="use_imu" value="false" />
     <param name="imu_topic" value="/arduimu_v3/imu" />
   </node>
   
-  <!--node name="octo" type="octomap_server_node" pkg="octomap_server" args="cloud_in:=/rgbd_odom_node/point_cloud _resolution:=0.025" output="screen"/-->
+  <node name="octo" type="octomap_server_node" pkg="octomap_server" args="cloud_in:=/rgbd_odom_odom/point_cloud _resolution:=0.025" output="screen"/>
   
   <node name="vis" type="rviz" pkg="rviz" args="-d $(find rgbd_odom)/launch/rgbd_odom_demo.rviz"/>
+
+  <node name="vis2" type="rviz" pkg="rviz" args="-d $(find siar_launch)/launch/7_clouds.rviz"/>
+
+  <include file="$(find siar_model)/launch/siar_model_viz.launch"/>
 
 </launch>
